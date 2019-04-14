@@ -1,1 +1,1 @@
-# Scheduler
+# Deficit Round Robin scheduler
