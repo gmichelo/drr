@@ -1,0 +1,5 @@
+package: github.com/drr
+import: []
+testImport:
+- package: github.com/smartystreets/goconvey
+  version: ~1.6.3
