@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"context"
 	"reflect"
 )
 
@@ -41,9 +42,15 @@ func (f *Flow) Send(val interface{}) {
 	f.in <- val
 }
 
-func getReadyChannels(chans []*Flow) []*Flow {
+func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
 	var res []*Flow
 	var cases []reflect.SelectCase
+	//First case is the termiantion channel for context cancellation
+	c := reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: reflect.ValueOf(termChan),
+	}
+	cases = append(cases, c)
 	//Create list of SelectCase
 	for _, ch := range chans {
 		c := reflect.SelectCase{
@@ -54,14 +61,36 @@ func getReadyChannels(chans []*Flow) []*Flow {
 	}
 
 	index, value, _ := reflect.Select(cases)
-	//TODO: handle closed chan
-	pickedOne := chans[index]
-	pickedOne.PushBuf(value)
-
+	if index > 0 {
+		//TODO: handle closed chan
+		pickedOne := chans[index-1]
+		pickedOne.PushBuf(value.Interface())
+	}
+	//Loop over all channels (flows) and add the ones
+	//that are not empty
 	for _, f := range chans {
 		if f.Len() > 0 {
 			res = append(res, f)
 		}
 	}
-	return res
+	//If list of ready channels is 0 and the
+	//index of activated channel is 0
+	//then it means that the context expired
+	if len(res) == 0 && index == 0 {
+		return nil, false
+	}
+	return res, true
+}
+
+func GetReadyChannels(ctx context.Context, chans []*Flow) ([]*Flow, bool) {
+	//Create an additional channel to make the reflect.Select return
+	//when the context expires
+	c := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			c <- struct{}{}
+		}
+	}()
+	return getReadyChannels(c, chans)
 }
