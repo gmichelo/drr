@@ -8,8 +8,9 @@ import (
 )
 
 type Flow struct {
-	in  chan interface{}
-	buf deque.Deque
+	in     chan interface{}
+	buf    deque.Deque
+	closed bool
 }
 
 func NewFlow(in chan interface{}) *Flow {
@@ -22,24 +23,32 @@ func (f *Flow) Chan() chan interface{} {
 	return f.in
 }
 
-func (f *Flow) pushBuf(val interface{}) {
-	f.buf.PushBack(val)
-}
-
 func (f *Flow) Len() int {
 	return f.buf.Len() + len(f.in)
 }
 
-func (f *Flow) Receive() interface{} {
+func (f *Flow) Receive() (interface{}, bool) {
 	if f.buf.Len() > 0 {
 		val := f.buf.PopFront()
-		return val
+		return val, !f.Closed()
 	}
-	return <-f.in
+	return <-f.in, !f.Closed()
 }
 
 func (f *Flow) Send(val interface{}) {
 	f.in <- val
+}
+
+func (f *Flow) pushBuf(val interface{}) {
+	f.buf.PushBack(val)
+}
+
+func (f *Flow) close() {
+	f.closed = true
+}
+
+func (f *Flow) Closed() bool {
+	return f.buf.Len() == 0 && f.closed
 }
 
 func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
@@ -60,11 +69,15 @@ func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
 		cases = append(cases, c)
 	}
 
-	index, value, _ := reflect.Select(cases)
+	index, value, ok := reflect.Select(cases)
 	if index > 0 {
-		//TODO: handle closed chan
+		//Rescaling index (-1) because of additional termination channel
 		pickedOne := chans[index-1]
 		pickedOne.pushBuf(value.Interface())
+		if !ok {
+			//Channel closed
+			pickedOne.close()
+		}
 	}
 	//Loop over all channels (flows) and add the ones
 	//that are not empty

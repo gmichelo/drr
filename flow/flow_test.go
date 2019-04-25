@@ -42,7 +42,7 @@ func TestRecv(t *testing.T) {
 		f := NewFlow(in)
 		payload := "TestMsg"
 		f.Send(payload)
-		res := f.Receive()
+		res, _ := f.Receive()
 		So(res, ShouldEqual, payload)
 	})
 
@@ -60,9 +60,9 @@ func TestPushBuf(t *testing.T) {
 		res := <-in
 		So(res, ShouldEqual, payload1)
 		f.pushBuf(res)
-		res = f.Receive()
+		res, _ = f.Receive()
 		So(res, ShouldEqual, payload1)
-		res = f.Receive()
+		res, _ = f.Receive()
 		So(res, ShouldEqual, payload2)
 	})
 }
@@ -90,7 +90,7 @@ func TestGetReadyChannels(t *testing.T) {
 		)
 		So(valid, ShouldEqual, true)
 		So(len(res), ShouldEqual, 1)
-		out := res[0].Receive()
+		out, _ := res[0].Receive()
 		str, ok := out.(string)
 		So(ok, ShouldEqual, true)
 		So(str, ShouldEqual, payload2)
@@ -110,7 +110,7 @@ func TestGetReadyChannels(t *testing.T) {
 		So(valid, ShouldEqual, true)
 		So(len(res), ShouldEqual, 2)
 		for _, flow := range res {
-			out := flow.Receive()
+			out, _ := flow.Receive()
 			str, ok := out.(string)
 			So(ok, ShouldEqual, true)
 			So(str, ShouldBeIn, []string{payload1, payload3})
@@ -131,6 +131,36 @@ func TestGetReadyChannels(t *testing.T) {
 		So(valid, ShouldEqual, false)
 		So(res, ShouldBeNil)
 	})
+
+	Convey("TestOneFlowClosed", t, func() {
+		in1 <- payload1
+		in1 <- payload1
+		close(in1)
+		var res []*Flow
+		var valid bool
+		for i := 0; i < 3; i++ {
+			res, valid = GetReadyChannels(
+				context.Background(),
+				[]*Flow{
+					f1,
+					f2,
+					f3,
+				},
+			)
+			So(valid, ShouldEqual, true)
+			So(len(res), ShouldEqual, 1)
+		}
+		for i := 0; i < 2; i++ {
+			out, opn := res[0].Receive()
+			So(opn, ShouldEqual, true)
+			str, ok := out.(string)
+			So(ok, ShouldEqual, true)
+			So(str, ShouldEqual, payload1)
+		}
+		out, opn := res[0].Receive()
+		So(opn, ShouldEqual, false)
+		So(out, ShouldEqual, nil)
+	})
 }
 
 func BenchmarkSend(b *testing.B) {
@@ -150,7 +180,7 @@ func BenchmarkRecv(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		msg = f.Receive()
+		msg, _ = f.Receive()
 	}
 }
 
@@ -162,7 +192,7 @@ func BenchmarkRecvWithPush(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		msg = f.Receive()
+		msg, _ = f.Receive()
 	}
 }
 
