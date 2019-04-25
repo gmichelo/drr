@@ -1,4 +1,4 @@
-package: github.com/drr
+package: github.com/BigMikes/drr
 import: []
 testImport:
 - package: github.com/smartystreets/goconvey

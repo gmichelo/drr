@@ -1,6 +1,8 @@
-hash: 2084260183a7fc83f6f7e8dcf812dfdeecb3acdc347820338e357be8919c93f7
-updated: 2019-04-14T22:05:39.022810353+02:00
-imports: []
+hash: 3db0d1e965fa5027fed5ee5cea677b49024580c3bbc238790196fce3b61b1247
+updated: 2019-04-25T11:41:36.503954468+02:00
+imports:
+- name: github.com/gammazero/deque
+  version: 2afb3858e9c73b567e0e05ea79906f4e1138bd4e
 testImports:
 - name: github.com/gopherjs/gopherjs
   version: bd77b112433e999447bf4bc599e36214ba494a99
@@ -17,12 +19,6 @@ testImports:
 - name: github.com/smartystreets/goconvey
   version: 9e8dc3f972df6c8fcc0375ef492c24d0bb204857
   subpackages:
+  - convey
   - convey/gotest
   - convey/reporting
-  - web/server/api
-  - web/server/contract
-  - web/server/executor
-  - web/server/messaging
-  - web/server/parser
-  - web/server/system
-  - web/server/watch

@@ -59,7 +59,7 @@ func TestPushBuf(t *testing.T) {
 		f.Send(payload2)
 		res := <-in
 		So(res, ShouldEqual, payload1)
-		f.PushBuf(res)
+		f.pushBuf(res)
 		res = f.Receive()
 		So(res, ShouldEqual, payload1)
 		res = f.Receive()
@@ -151,6 +151,27 @@ func BenchmarkRecv(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		msg = f.Receive()
+	}
+}
+
+func BenchmarkRecvWithPush(b *testing.B) {
+	in := make(chan interface{}, b.N+1)
+	f := NewFlow(in)
+	for i := 0; i < b.N; i++ {
+		f.pushBuf("TestMsg")
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		msg = f.Receive()
+	}
+}
+
+func BenchmarkPushBuf(b *testing.B) {
+	in := make(chan interface{}, b.N+1)
+	f := NewFlow(in)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		f.pushBuf("TestMsg")
 	}
 }
 

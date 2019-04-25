@@ -3,11 +3,13 @@ package flow
 import (
 	"context"
 	"reflect"
+
+	"github.com/gammazero/deque"
 )
 
 type Flow struct {
 	in  chan interface{}
-	buf []interface{}
+	buf deque.Deque
 }
 
 func NewFlow(in chan interface{}) *Flow {
@@ -20,19 +22,17 @@ func (f *Flow) Chan() chan interface{} {
 	return f.in
 }
 
-func (f *Flow) PushBuf(val interface{}) {
-	f.buf = append(f.buf, val)
+func (f *Flow) pushBuf(val interface{}) {
+	f.buf.PushBack(val)
 }
 
 func (f *Flow) Len() int {
-	return len(f.buf) + len(f.in)
+	return f.buf.Len() + len(f.in)
 }
 
 func (f *Flow) Receive() interface{} {
-	if len(f.buf) > 0 {
-		val := f.buf[0]
-		f.buf[0] = nil
-		f.buf = f.buf[1:]
+	if f.buf.Len() > 0 {
+		val := f.buf.PopFront()
 		return val
 	}
 	return <-f.in
@@ -64,7 +64,7 @@ func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
 	if index > 0 {
 		//TODO: handle closed chan
 		pickedOne := chans[index-1]
-		pickedOne.PushBuf(value.Interface())
+		pickedOne.pushBuf(value.Interface())
 	}
 	//Loop over all channels (flows) and add the ones
 	//that are not empty
