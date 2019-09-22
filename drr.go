@@ -3,13 +3,11 @@ package drr
 import (
 	"context"
 	"log"
-	"sync"
 
 	"github.com/bigmikes/drr/flow"
 )
 
 type DRR struct {
-	sync.Mutex
 	flows   map[int]*flow.Flow
 	lastID  int
 	outChan chan interface{}
@@ -27,17 +25,9 @@ func (d *DRR) Output() chan interface{} {
 }
 
 func (d *DRR) Input(prio int, in chan interface{}) {
-	d.Lock()
-	defer d.Unlock()
-	oldLen := len(d.flows)
+	log.Printf("Registered flow %v\n", d.lastID)
 	d.flows[d.lastID] = flow.NewFlow(d.lastID, prio, in)
 	d.lastID++
-	log.Printf("Registered flow %v\n", d.lastID)
-	//First flow got registered, start DRR goroutine
-	if oldLen == 0 {
-		log.Println("First flow registered, start DRR goroutine")
-		d.runDRR()
-	}
 }
 
 func mapToSlice(mapIn map[int]*flow.Flow) []*flow.Flow {
@@ -48,14 +38,13 @@ func mapToSlice(mapIn map[int]*flow.Flow) []*flow.Flow {
 	return outSlice
 }
 
-func (d *DRR) runDRR() {
+func (d *DRR) Start() {
 	go func() {
 		for {
-			d.Lock()
-			log.Println("Total flows", len(d.flows))
+			//TODO Review context generation and propagation
 			readyFlows, valid := flow.GetReadyChannels(
-				context.TODO(), mapToSlice(d.flows))
-			log.Println("Ready flows", len(readyFlows))
+				context.TODO(),
+				mapToSlice(d.flows))
 			if !valid {
 				//TODO exit?
 			}
@@ -66,6 +55,7 @@ func (d *DRR) runDRR() {
 					if !ok {
 						//Channel is closed, remove it from flow list
 						delete(d.flows, flow.ID())
+						log.Printf("Flow %v got closed\n", flow.ID())
 						//If last flow, close out chan and exit goroutine
 						if len(d.flows) == 0 {
 							log.Println("All flows got closed, close output chan and exit")
@@ -81,7 +71,6 @@ func (d *DRR) runDRR() {
 					}
 				}
 			}
-			d.Unlock()
 		}
 	}()
 }

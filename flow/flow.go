@@ -107,14 +107,5 @@ func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
 }
 
 func GetReadyChannels(ctx context.Context, chans []*Flow) ([]*Flow, bool) {
-	//Create an additional channel to make the reflect.Select return
-	//when the context expires
-	c := make(chan struct{})
-	go func() {
-		select {
-		case <-ctx.Done():
-			c <- struct{}{}
-		}
-	}()
-	return getReadyChannels(c, chans)
+	return getReadyChannels(nil, chans)
 }
