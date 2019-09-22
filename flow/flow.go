@@ -8,14 +8,17 @@ import (
 )
 
 type Flow struct {
-	in     chan interface{}
-	buf    deque.Deque
-	closed bool
+	id, prio int
+	in       chan interface{}
+	buf      deque.Deque
+	closed   bool
 }
 
-func NewFlow(in chan interface{}) *Flow {
+func NewFlow(id, prio int, in chan interface{}) *Flow {
 	return &Flow{
-		in: in,
+		id:   id,
+		prio: prio,
+		in:   in,
 	}
 }
 
@@ -45,6 +48,14 @@ func (f *Flow) pushBuf(val interface{}) {
 
 func (f *Flow) close() {
 	f.closed = true
+}
+
+func (f *Flow) Priority() int {
+	return f.prio
+}
+
+func (f *Flow) ID() int {
+	return f.id
 }
 
 func (f *Flow) Closed() bool {
