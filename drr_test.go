@@ -2,6 +2,7 @@ package drr
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"testing"
@@ -113,4 +114,50 @@ func getFlowID(s string) int {
 		panic(fmt.Errorf("convert of string %s failed: %v", s, err))
 	}
 	return id
+}
+
+func TestMeasureOutputRate(t *testing.T) {
+	nFlows := 100
+	flowSize := 10000
+	outChan := make(chan interface{}, flowSize)
+	drr := NewDRR(outChan)
+	var flows []chan interface{}
+	Convey("Prepare flow with known payload", t, func() {
+		for flowID := 0; flowID < nFlows; flowID++ {
+			inChan := make(chan interface{}, flowSize)
+			for x := 0; x < flowSize; x++ {
+				inChan <- flowID
+			}
+			flows = append(flows, inChan)
+		}
+	})
+	expectedRates := make(map[int]float64)
+	totalPrio := float64(0)
+	Convey("Register all flows", t, func() {
+		for flowID, f := range flows {
+			prio := flowID + 1
+			drr.Input(prio, f)
+			expectedRates[flowID] = float64(prio)
+			totalPrio += float64(prio)
+		}
+		for flowID := range expectedRates {
+			expectedRates[flowID] /= totalPrio
+		}
+	})
+	Convey("Check output w.r.t. known payloads", t, func() {
+		drr.Start()
+		hist := make(map[int]int)
+		for i := 0; i < flowSize; i++ {
+			val := <-drr.Output()
+			flowID := val.(int)
+			hist[flowID]++
+		}
+
+		for flowID := range hist {
+			outputRates := float64(hist[flowID]) / float64(flowSize)
+			log.Println("Flow", flowID, "prio", flowID+1,
+				"rate", outputRates, "expected", expectedRates[flowID])
+			So(outputRates, ShouldAlmostEqual, expectedRates[flowID], .01)
+		}
+	})
 }

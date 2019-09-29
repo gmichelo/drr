@@ -22,6 +22,9 @@ func (d *DRR) Output() chan interface{} {
 }
 
 func (d *DRR) Input(prio int, in chan interface{}) {
+	//TODO: validate input prio and chan
+	//zero or negative priority is not allowed as that flow
+	//would never be scheduled and nil channel would do the same
 	d.flows[d.lastID] = NewFlow(d.lastID, prio, in)
 	d.lastID++
 }
