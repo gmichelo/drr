@@ -1,4 +1,4 @@
-package flow
+package drr
 
 import (
 	"context"
@@ -12,7 +12,7 @@ func TestNewFlow(t *testing.T) {
 
 	Convey("TestNewFlow", t, func() {
 		in := make(chan interface{}, 10)
-		f := NewFlow(in)
+		f := NewFlow(1, 10, in)
 		So(f, ShouldNotEqual, nil)
 		So(f.Len(), ShouldEqual, 0)
 	})
@@ -21,7 +21,7 @@ func TestNewFlow(t *testing.T) {
 
 func TestSend(t *testing.T) {
 	in := make(chan interface{}, 10)
-	f := NewFlow(in)
+	f := NewFlow(1, 10, in)
 
 	Convey("TestSend", t, func() {
 		f.Send("TestMsg")
@@ -39,7 +39,7 @@ func TestRecv(t *testing.T) {
 
 	Convey("TestRecv", t, func() {
 		in := make(chan interface{}, 10)
-		f := NewFlow(in)
+		f := NewFlow(1, 10, in)
 		payload := "TestMsg"
 		f.Send(payload)
 		res, _ := f.Receive()
@@ -50,7 +50,7 @@ func TestRecv(t *testing.T) {
 
 func TestPushBuf(t *testing.T) {
 	in := make(chan interface{}, 10)
-	f := NewFlow(in)
+	f := NewFlow(1, 10, in)
 	payload1 := "TestMsg1"
 	payload2 := "TestMsg2"
 
@@ -69,13 +69,13 @@ func TestPushBuf(t *testing.T) {
 
 func TestGetReadyChannels(t *testing.T) {
 	in1 := make(chan interface{}, 10)
-	f1 := NewFlow(in1)
+	f1 := NewFlow(1, 10, in1)
 	payload1 := "TestMsg1"
 	in2 := make(chan interface{}, 10)
-	f2 := NewFlow(in2)
+	f2 := NewFlow(1, 10, in2)
 	payload2 := "TestMsg2"
 	in3 := make(chan interface{}, 10)
-	f3 := NewFlow(in3)
+	f3 := NewFlow(1, 10, in3)
 	payload3 := "TestMsg3"
 
 	Convey("TestOneFlowReady", t, func() {
@@ -165,7 +165,7 @@ func TestGetReadyChannels(t *testing.T) {
 
 func BenchmarkSend(b *testing.B) {
 	in := make(chan interface{}, b.N+1)
-	f := NewFlow(in)
+	f := NewFlow(1, 10, in)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		f.Send("TestMsg")
@@ -174,7 +174,7 @@ func BenchmarkSend(b *testing.B) {
 
 func BenchmarkRecv(b *testing.B) {
 	in := make(chan interface{}, b.N+1)
-	f := NewFlow(in)
+	f := NewFlow(1, 10, in)
 	for i := 0; i < b.N; i++ {
 		in <- "TestMsg"
 	}
@@ -186,7 +186,7 @@ func BenchmarkRecv(b *testing.B) {
 
 func BenchmarkRecvWithPush(b *testing.B) {
 	in := make(chan interface{}, b.N+1)
-	f := NewFlow(in)
+	f := NewFlow(1, 10, in)
 	for i := 0; i < b.N; i++ {
 		f.pushBuf("TestMsg")
 	}
@@ -198,7 +198,7 @@ func BenchmarkRecvWithPush(b *testing.B) {
 
 func BenchmarkPushBuf(b *testing.B) {
 	in := make(chan interface{}, b.N+1)
-	f := NewFlow(in)
+	f := NewFlow(1, 10, in)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		f.pushBuf("TestMsg")

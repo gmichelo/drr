@@ -57,7 +57,7 @@ func TestDRR(t *testing.T) {
 
 func TestIntegrityAndOrder(t *testing.T) {
 	nFlows := 100
-	flowSize := 10000
+	flowSize := 100
 	var drr *DRR
 	outChan := make(chan interface{}, 10)
 	Convey("Create DRR", t, func() {
@@ -110,7 +110,7 @@ func getFlowID(s string) int {
 	idStr := strings.Split(s, ":")[0]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		panic(fmt.Errorf("convertio of string %s failed: %v", s, err))
+		panic(fmt.Errorf("convert of string %s failed: %v", s, err))
 	}
 	return id
 }

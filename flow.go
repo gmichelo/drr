@@ -1,4 +1,4 @@
-package flow
+package drr
 
 import (
 	"context"
@@ -62,7 +62,7 @@ func (f *Flow) Closed() bool {
 	return f.buf.Len() == 0 && f.closed
 }
 
-func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
+func getReadyChannels(termChan <-chan struct{}, chans []*Flow) ([]*Flow, bool) {
 	var res []*Flow
 	var cases []reflect.SelectCase
 	//First case is the termiantion channel for context cancellation
@@ -107,5 +107,5 @@ func getReadyChannels(termChan chan struct{}, chans []*Flow) ([]*Flow, bool) {
 }
 
 func GetReadyChannels(ctx context.Context, chans []*Flow) ([]*Flow, bool) {
-	return getReadyChannels(nil, chans)
+	return getReadyChannels(ctx.Done(), chans)
 }
