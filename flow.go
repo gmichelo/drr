@@ -63,8 +63,8 @@ func (f *Flow) Closed() bool {
 }
 
 func getReadyChannels(termChan <-chan struct{}, chans []*Flow) ([]*Flow, bool) {
-	var res []*Flow
-	var cases []reflect.SelectCase
+	res := make([]*Flow, 0, len(chans)+1)
+	cases := make([]reflect.SelectCase, 0, len(chans)+1)
 	//First case is the termiantion channel for context cancellation
 	c := reflect.SelectCase{
 		Dir:  reflect.SelectRecv,

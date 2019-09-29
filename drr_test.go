@@ -161,3 +161,16 @@ func TestMeasureOutputRate(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkOverheadUnloaded(b *testing.B) {
+	outChan := make(chan interface{})
+	inChan := make(chan interface{})
+	drr := NewDRR(outChan)
+	drr.Input(10, inChan)
+	drr.Start()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		inChan <- 5
+		<-outChan
+	}
+}
