@@ -62,6 +62,13 @@ func (f *Flow) Closed() bool {
 	return f.buf.Len() == 0 && f.closed
 }
 
+func GetReadyChannels(ctx context.Context, chans []*Flow) ([]*Flow, bool) {
+	if len(chans) == 1 {
+		return select1(ctx.Done(), chans)
+	}
+	return getReadyChannels(ctx.Done(), chans)
+}
+
 func getReadyChannels(termChan <-chan struct{}, chans []*Flow) ([]*Flow, bool) {
 	res := make([]*Flow, 0, len(chans)+1)
 	cases := make([]reflect.SelectCase, 0, len(chans)+1)
@@ -106,6 +113,15 @@ func getReadyChannels(termChan <-chan struct{}, chans []*Flow) ([]*Flow, bool) {
 	return res, true
 }
 
-func GetReadyChannels(ctx context.Context, chans []*Flow) ([]*Flow, bool) {
-	return getReadyChannels(ctx.Done(), chans)
+func select1(termChan <-chan struct{}, chans []*Flow) ([]*Flow, bool) {
+	select {
+	case <-termChan:
+		return nil, false
+	case val, ok := <-chans[0].Chan():
+		chans[0].pushBuf(val)
+		if !ok {
+			chans[0].close()
+		}
+	}
+	return []*Flow{chans[0]}, true
 }
