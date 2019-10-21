@@ -1,8 +1,8 @@
 package drr
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"testing"
@@ -47,7 +47,7 @@ func TestDRR(t *testing.T) {
 		drr.Input(1, flow2)
 	})
 	Convey("Check output", t, func() {
-		drr.Start()
+		drr.Start(context.TODO())
 		for out := range drr.Output() {
 			s, ok := out.(string)
 			So(ok, ShouldEqual, true)
@@ -84,7 +84,7 @@ func TestIntegrityAndOrder(t *testing.T) {
 		}
 	})
 	Convey("Check output w.r.t. known payloads", t, func() {
-		drr.Start()
+		drr.Start(context.TODO())
 		outputPayloads := make(map[int][]interface{})
 		for out := range drr.Output() {
 			s, ok := out.(string)
@@ -145,7 +145,7 @@ func TestMeasureOutputRate(t *testing.T) {
 		}
 	})
 	Convey("Check output w.r.t. known payloads", t, func() {
-		drr.Start()
+		drr.Start(context.TODO())
 		hist := make(map[int]int)
 		for i := 0; i < flowSize; i++ {
 			val := <-drr.Output()
@@ -155,8 +155,6 @@ func TestMeasureOutputRate(t *testing.T) {
 
 		for flowID := range hist {
 			outputRates := float64(hist[flowID]) / float64(flowSize)
-			log.Println("Flow", flowID, "prio", flowID+1,
-				"rate", outputRates, "expected", expectedRates[flowID])
 			So(outputRates, ShouldAlmostEqual, expectedRates[flowID], .01)
 		}
 	})
@@ -167,7 +165,7 @@ func BenchmarkOverheadUnloaded(b *testing.B) {
 	inChan := make(chan interface{})
 	drr := NewDRR(outChan)
 	drr.Input(10, inChan)
-	drr.Start()
+	drr.Start(context.TODO())
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		inChan <- 5
