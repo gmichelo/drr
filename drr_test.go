@@ -180,6 +180,40 @@ func TestErrorInput(t *testing.T) {
 	})
 }
 
+func TestContextExipre(t *testing.T) {
+	Convey("Create an empty DRR, start it and cancel the context", t, func() {
+		outChan := make(chan interface{})
+		drr, _ := NewDRR(outChan)
+		ctx, cancel := context.WithCancel(context.Background())
+		err := drr.Start(ctx)
+		So(err, ShouldEqual, nil)
+		cancel()
+		val, ok := <-outChan
+		So(val, ShouldEqual, nil)
+		So(ok, ShouldEqual, false)
+	})
+
+	Convey("Create DRR with one flow, start it and cancel the context", t, func() {
+		outChan := make(chan interface{})
+		drr, _ := NewDRR(outChan)
+		flow := generator("flow", 5)
+		drr.Input(10, flow)
+		ctx, cancel := context.WithCancel(context.Background())
+		err := drr.Start(ctx)
+		So(err, ShouldEqual, nil)
+		val, ok := <-outChan
+		So(val, ShouldNotEqual, nil)
+		So(ok, ShouldEqual, true)
+		cancel()
+		val, ok = <-outChan
+		So(val, ShouldNotEqual, nil)
+		So(ok, ShouldEqual, true)
+		val, ok = <-outChan
+		So(val, ShouldEqual, nil)
+		So(ok, ShouldEqual, false)
+	})
+}
+
 func BenchmarkOverheadUnloaded(b *testing.B) {
 	outChan := make(chan interface{})
 	inChan := make(chan interface{})

@@ -104,6 +104,14 @@ func (d *DRR) Start(ctx context.Context) error {
 				// Trasmit from channel until it has nothing else to send
 				// or its DC reaches 0
 				for i := 0; i < dc; i++ {
+					//First, check if context expired
+					select {
+					case <-ctx.Done():
+						// Context expired, exit
+						return
+					default:
+					}
+					//Then, read from input chan
 					select {
 					case val, ok := <-flow.c:
 						if !ok {
@@ -113,9 +121,6 @@ func (d *DRR) Start(ctx context.Context) error {
 						} else {
 							d.outChan <- val
 						}
-					case <-ctx.Done():
-						// Context expired, exit
-						return
 					default:
 						continue flowLoop
 					}
