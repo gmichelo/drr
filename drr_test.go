@@ -37,7 +37,7 @@ func TestDRR(t *testing.T) {
 	var drr *DRR
 	outChan := make(chan interface{}, 10)
 	Convey("Create DRR", t, func() {
-		drr = NewDRR(outChan)
+		drr, _ = NewDRR(outChan)
 		So(drr, ShouldNotEqual, nil)
 	})
 	Convey("Register flow", t, func() {
@@ -48,7 +48,7 @@ func TestDRR(t *testing.T) {
 	})
 	Convey("Check output", t, func() {
 		drr.Start(context.TODO())
-		for out := range drr.Output() {
+		for out := range outChan {
 			s, ok := out.(string)
 			So(ok, ShouldEqual, true)
 			So(s, ShouldNotEqual, "")
@@ -62,7 +62,7 @@ func TestIntegrityAndOrder(t *testing.T) {
 	var drr *DRR
 	outChan := make(chan interface{}, 10)
 	Convey("Create DRR", t, func() {
-		drr = NewDRR(outChan)
+		drr, _ = NewDRR(outChan)
 		So(drr, ShouldNotEqual, nil)
 	})
 	var flows []chan interface{}
@@ -86,7 +86,7 @@ func TestIntegrityAndOrder(t *testing.T) {
 	Convey("Check output w.r.t. known payloads", t, func() {
 		drr.Start(context.TODO())
 		outputPayloads := make(map[int][]interface{})
-		for out := range drr.Output() {
+		for out := range outChan {
 			s, ok := out.(string)
 			So(ok, ShouldEqual, true)
 			So(s, ShouldNotEqual, "")
@@ -120,7 +120,7 @@ func TestMeasureOutputRate(t *testing.T) {
 	nFlows := 100
 	flowSize := 10000
 	outChan := make(chan interface{}, flowSize)
-	drr := NewDRR(outChan)
+	drr, _ := NewDRR(outChan)
 	var flows []chan interface{}
 	Convey("Prepare flow with known payload", t, func() {
 		for flowID := 0; flowID < nFlows; flowID++ {
@@ -148,7 +148,7 @@ func TestMeasureOutputRate(t *testing.T) {
 		drr.Start(context.TODO())
 		hist := make(map[int]int)
 		for i := 0; i < flowSize; i++ {
-			val := <-drr.Output()
+			val := <-outChan
 			flowID := val.(int)
 			hist[flowID]++
 		}
@@ -160,10 +160,30 @@ func TestMeasureOutputRate(t *testing.T) {
 	})
 }
 
+func TestErrorInput(t *testing.T) {
+	Convey("Create DRR by passing nil output chan", t, func() {
+		drr, err := NewDRR(nil)
+		So(drr, ShouldEqual, nil)
+		So(err, ShouldEqual, ChannelIsNilError)
+	})
+	Convey("Create DRR and pass wrong values in Input API", t, func() {
+		drr, _ := NewDRR(make(chan interface{}))
+		err := drr.Input(0, make(chan interface{}))
+		So(err, ShouldEqual, InvalidPriorityValueError)
+		err = drr.Input(1, nil)
+		So(err, ShouldEqual, ChannelIsNilError)
+	})
+	Convey("Create DRR and pass wrong values in Input API", t, func() {
+		drr, _ := NewDRR(make(chan interface{}))
+		err := drr.Start(nil)
+		So(err, ShouldEqual, ContextIsNilError)
+	})
+}
+
 func BenchmarkOverheadUnloaded(b *testing.B) {
 	outChan := make(chan interface{})
 	inChan := make(chan interface{})
-	drr := NewDRR(outChan)
+	drr, _ := NewDRR(outChan)
 	drr.Input(10, inChan)
 	drr.Start(context.TODO())
 	b.ResetTimer()
@@ -171,4 +191,51 @@ func BenchmarkOverheadUnloaded(b *testing.B) {
 		inChan <- 5
 		<-outChan
 	}
+}
+
+func ExampleDRR() {
+	chanSize := 5
+	outChan := make(chan interface{}, chanSize)
+	// Create new DRR
+	drr, _ := NewDRR(outChan)
+
+	// First input channel with priority = 3
+	inChan1 := make(chan interface{}, chanSize)
+	prio1 := 3
+	// Prepare known workload
+	for i := 0; i < chanSize; i++ {
+		inChan1 <- "chan1"
+	}
+	// Register channel into DRR
+	drr.Input(prio1, inChan1)
+
+	// Second input channel with priority = 2
+	inChan2 := make(chan interface{}, chanSize)
+	prio2 := 2
+	// Prepare known workload
+	for i := 0; i < chanSize; i++ {
+		inChan2 <- "chan2"
+	}
+	// Register channel into DRR
+	drr.Input(prio2, inChan2)
+
+	// Start DRR scheduler goroutine
+	drr.Start(context.Background())
+
+	// Check the output: over 5 output values
+	// 3/5 of them should come from first channel
+	// with priority 3 and 2/5 should come from second
+	// channel with priority 2.
+	for i := 0; i < chanSize; i++ {
+		val := <-outChan
+		str := val.(string)
+		fmt.Println(str)
+	}
+
+	// Output:
+	// chan1
+	// chan1
+	// chan1
+	// chan2
+	// chan2
 }

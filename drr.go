@@ -1,47 +1,103 @@
+// Copyright 2019 Giulio Micheloni
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+// Package drr provides a simple generic implementation of Deficit Round Robin
+// scheduler for channels.
 package drr
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 )
 
+var (
+	// InvalidPriorityValueError error is returned by Input method when
+	// priority value is less than or equal to 0.
+	InvalidPriorityValueError = fmt.Errorf("InvalidPriorityValueError")
+	// ChannelIsNilError error is returned by NewDRR and Input methods
+	// when channel is nil.
+	ChannelIsNilError = fmt.Errorf("ChannelIsNilError")
+	// ContextIsNilError is returned by Start method when context.Context
+	// is nil
+	ContextIsNilError = fmt.Errorf("ContextIsNil")
+)
+
 type flow struct {
-	c    chan interface{}
+	c    <-chan interface{}
 	prio int
 }
 
+// DRR is a Deficit Round Robin scheduler, as detailed in
+// https://en.wikipedia.org/wiki/Deficit_round_robin.
 type DRR struct {
 	flows         []flow
 	outChan       chan interface{}
 	flowsToDelete []int
 }
 
-func NewDRR(outChan chan interface{}) *DRR {
+// NewDRR creates a new DRR with indicated output channel.
+//
+// The outChan must be non-nil, otherwise NewDRR return
+// ChannelIsNilError error.
+func NewDRR(outChan chan interface{}) (*DRR, error) {
+	if outChan == nil {
+		return nil, ChannelIsNilError
+	}
 	return &DRR{
 		outChan: outChan,
+	}, nil
+}
+
+// Input registers a new ingress flow, that is a channel with
+// priority.
+//
+// Input returns ChannelIsNilError if input channel is nil.
+// Priority must be greater than 0, otherwise Input returns
+// InvalidPriorityValueError error.
+func (d *DRR) Input(prio int, in <-chan interface{}) error {
+	if prio <= 0 {
+		return InvalidPriorityValueError
 	}
-}
-
-func (d *DRR) Output() chan interface{} {
-	return d.outChan
-}
-
-func (d *DRR) Input(prio int, in chan interface{}) {
-	//TODO: validate input prio and chan
-	//zero or negative priority is not allowed as that flow
-	//would never be scheduled and nil channel would do the same
+	if in == nil {
+		return ChannelIsNilError
+	}
 	d.flows = append(d.flows, flow{c: in, prio: prio})
+	return nil
 }
 
-func (d *DRR) Start(ctx context.Context) {
+// Start actually spawns the DRR goroutine. Once Start is called,
+// goroutine starts forwarding from input channels previously registered
+// through Input method to output channel.
+//
+// Start returns ContextIsNil error if ctx is nil.
+//
+// DRR goroutine exits when context.Context expires or when all the input
+// channels are closed. DRR goroutine closes the output channel upon termination.
+func (d *DRR) Start(ctx context.Context) error {
+	if ctx == nil {
+		return ContextIsNilError
+	}
 	go func() {
 		defer close(d.outChan)
 		for {
-			//TODO Review context generation and propagation
+			// Wait for at least one channel to be ready
 			readyIndex, value, ok := getReadyChannel(
 				ctx,
 				d.flows)
 			if readyIndex < 0 {
+				// Context expired, exit
 				return
 			}
 		flowLoop:
@@ -49,35 +105,44 @@ func (d *DRR) Start(ctx context.Context) {
 				dc := flow.prio
 				if readyIndex == index {
 					if !ok {
+						// Chan got closed, remove it from internal slice
 						d.prepareToUnregister(index)
 						continue flowLoop
 					} else {
+						// This chan triggered the reflect.Select statement
+						// transmit its value and decrement its deficit counter
 						d.outChan <- value
 						dc = flow.prio - 1
 					}
 				}
+				// Trasmit from channel until it has nothing else to send
+				// or its DC reaches 0
 				for i := 0; i < dc; i++ {
 					select {
 					case val, ok := <-flow.c:
 						if !ok {
+							// Chan got closed, remove it from internal slice
 							d.prepareToUnregister(index)
 							continue flowLoop
 						} else {
 							d.outChan <- val
 						}
 					case <-ctx.Done():
+						// Context expired, exit
 						return
 					default:
 						continue flowLoop
 					}
 				}
 			}
+			// All channel closed in this execution can now be actually removed
 			last := d.unregisterFlows()
 			if last {
 				return
 			}
 		}
 	}()
+	return nil
 }
 
 func (d *DRR) prepareToUnregister(index int) {
