@@ -10,7 +10,7 @@ Let's assume you have one single worker goroutine that must handle all the incom
   <img src="doc/img/drrschema.png">
 </p>
 
-What we observe from channel _Out_ is that input flows _In_1_ and _In_2_ share the output's capacity according to their priorities. That is, flow _In_1_ takes _P1/(P1 + P2)_ fraction of output capacity. While flow _In_2_ uses the remaining fraction, _P2/(P1 + P2)_. 
+What we observe from channel _Out_ is that input flows _In_1_ and _In_2_ share the output's capacity according to their priorities. That is, flow _In_1_ takes <img src="https://latex.codecogs.com/svg.latex?\inline&space;\fn_phv&space;\LARGE&space;\frac{P1}{P1&plus;P2}" title="Fraction of In1" /> fraction of output capacity. While flow _In_2_ uses the remaining fraction, <img src="https://latex.codecogs.com/svg.latex?\inline&space;\fn_phv&space;\LARGE&space;\frac{P2}{P1&plus;P2}" title="Fraction of In1" />.
 
 <p align="center">
   <img src="doc/img/barchart.png">
