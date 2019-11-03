@@ -35,7 +35,7 @@ type DRR struct {
 
 // NewDRR creates a new DRR with indicated output channel.
 //
-// The outChan must be non-nil, otherwise NewDRR return
+// The outChan must be non-nil, otherwise NewDRR returns
 // ChannelIsNilError error.
 func NewDRR(outChan chan interface{}) (*DRR, error) {
 	if outChan == nil {

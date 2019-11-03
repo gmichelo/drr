@@ -1,7 +1,18 @@
 # Deficit Round Robin channels scheduler
 
 ## Introduction
-Sometimes, certain messages are more important than others. The drr package provides a generic implementation of [Deficit Round Robin scheduler](https://en.wikipedia.org/wiki/Deficit_round_robin) for Go's channels. With this package, developer can merge multiple input channels into a single output one by enforcing different input rates. 
+Sometimes, certain messages are more important than others. The drr package provides a generic implementation of [Deficit Round Robin scheduler](https://en.wikipedia.org/wiki/Deficit_round_robin) for Go channels. Through this package, developer can merge multiple input channels into a single output one by enforcing different input rates. 
+
+## Quick overview on DRR theory
+Let's assume you have one single worker goroutine that must handle all the incoming requests. Let's also assume that there are two sources of those requests implemented through a couple of channels. Channel _In_1_ carries the requests with higher priority _P1_. While channel _In_2_ carries the requests with lower priority _P2_. 
+
+![DRR diagram](doc/img/drrschema.png)
+
+What we observe from channel _Out_ is that input flows _In_1_ and _In_2_ share the output's capacity according to their priorities. That is, flow _In_1_ takes _P1/(P1 + P2)_ fraction of output capacity. While flow _In_2_ uses the remaining fraction, _P2/(P1 + P2)_. 
+
+![Out rates](doc/img/barchart.png)
+
+DRR scheduling algorithm does not take into account empty flows (i.e. those that do not have nothing to transmit). Therefore, the output capacity is shared among all the non-empty input flows.
 
 ## API Documentation
 Documentation can be found [here](https://godoc.org/github.com/bigmikes/drr).
