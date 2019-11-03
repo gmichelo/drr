@@ -3,6 +3,7 @@
 [![GoDoc][GoDoc-Image]][GoDoc-Url]
 [![License][License-Image]][License-Url]
 [![FOSSA Status][FOSSA-Image]][FOSSA-Url]
+[![Build Status][Build-Image]][Build-Url]
 
 [GoDoc-Url]: https://godoc.org/github.com/bigmikes/drr
 [GoDoc-Image]: https://godoc.org/github.com/bigmikes/drr?status.svg
@@ -10,6 +11,8 @@
 [License-Image]: https://img.shields.io/badge/License-MIT-yellow.svg
 [FOSSA-Url]: https://app.fossa.io/projects/git%2Bgithub.com%2Fbigmikes%2Fdrr?ref=badge_shield
 [FOSSA-Image]: https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbigmikes%2Fdrr.svg?type=shield
+[Build-Url]: https://travis-ci.org/bigmikes/drr
+[Build-Image]: https://travis-ci.org/bigmikes/drr.svg?branch=master
 
 ## Introduction
 Sometimes, certain messages are more important than others. The drr package provides a generic implementation of [Deficit Round Robin scheduler](https://en.wikipedia.org/wiki/Deficit_round_robin) for Go channels. Through this package, developer can merge multiple input channels into a single output one by enforcing different input rates. 
