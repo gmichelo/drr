@@ -83,4 +83,4 @@ func main() {
 The drr package is licensed under the MIT License. Please see the LICENSE file for details.
 
 ## Contributing and bug reports
-You are welcome to open a new issue [here on GitHub](https://github.com/bigmikes/drr/issues) to provide feedbacks. 
+This package surely needs your help and feedbacks. You are welcome to open a new issue [here on GitHub](https://github.com/bigmikes/drr/issues). 
