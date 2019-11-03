@@ -1,4 +1,6 @@
 # Deficit Round Robin channels scheduler
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbigmikes%2Fdrr.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fbigmikes%2Fdrr?ref=badge_shield)
+
 
 ## Introduction
 Sometimes, certain messages are more important than others. The drr package provides a generic implementation of [Deficit Round Robin scheduler](https://en.wikipedia.org/wiki/Deficit_round_robin) for Go channels. Through this package, developer can merge multiple input channels into a single output one by enforcing different input rates. 
@@ -82,5 +84,8 @@ func main() {
 ## License 
 The drr package is licensed under the MIT License. Please see the LICENSE file for details.
 
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbigmikes%2Fdrr.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fbigmikes%2Fdrr?ref=badge_large)
+
 ## Contributing and bug reports
-This package surely needs your help and feedbacks. You are welcome to open a new issue [here on GitHub](https://github.com/bigmikes/drr/issues). 
+This package surely needs your help and feedbacks. You are welcome to open a new issue [here on GitHub](https://github.com/bigmikes/drr/issues).
