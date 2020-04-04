@@ -164,19 +164,19 @@ func TestErrorInput(t *testing.T) {
 	Convey("Create DRR by passing nil output chan", t, func() {
 		drr, err := NewDRR(nil)
 		So(drr, ShouldEqual, nil)
-		So(err, ShouldEqual, ErrChannelIsNilError)
+		So(err, ShouldEqual, ErrChannelIsNil)
 	})
 	Convey("Create DRR and pass wrong values in Input API", t, func() {
 		drr, _ := NewDRR(make(chan interface{}))
 		err := drr.Input(0, make(chan interface{}))
-		So(err, ShouldEqual, ErrInvalidPriorityValueError)
+		So(err, ShouldEqual, ErrInvalidPriorityValue)
 		err = drr.Input(1, nil)
-		So(err, ShouldEqual, ErrChannelIsNilError)
+		So(err, ShouldEqual, ErrChannelIsNil)
 	})
 	Convey("Create DRR and pass wrong values in Input API", t, func() {
 		drr, _ := NewDRR(make(chan interface{}))
 		err := drr.Start(nil)
-		So(err, ShouldEqual, ErrContextIsNilError)
+		So(err, ShouldEqual, ErrContextIsNil)
 	})
 }
 
