@@ -111,7 +111,7 @@ func getFlowID(s string) int {
 	idStr := strings.Split(s, ":")[0]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		panic(fmt.Errorf("convert of string %s failed: %v", s, err))
+		panic(fmt.Errorf("convert of string %s failed: %w", s, err))
 	}
 	return id
 }
@@ -164,19 +164,19 @@ func TestErrorInput(t *testing.T) {
 	Convey("Create DRR by passing nil output chan", t, func() {
 		drr, err := NewDRR(nil)
 		So(drr, ShouldEqual, nil)
-		So(err, ShouldEqual, ChannelIsNilError)
+		So(err, ShouldEqual, ErrChannelIsNilError)
 	})
 	Convey("Create DRR and pass wrong values in Input API", t, func() {
 		drr, _ := NewDRR(make(chan interface{}))
 		err := drr.Input(0, make(chan interface{}))
-		So(err, ShouldEqual, InvalidPriorityValueError)
+		So(err, ShouldEqual, ErrInvalidPriorityValueError)
 		err = drr.Input(1, nil)
-		So(err, ShouldEqual, ChannelIsNilError)
+		So(err, ShouldEqual, ErrChannelIsNilError)
 	})
 	Convey("Create DRR and pass wrong values in Input API", t, func() {
 		drr, _ := NewDRR(make(chan interface{}))
 		err := drr.Start(nil)
-		So(err, ShouldEqual, ContextIsNilError)
+		So(err, ShouldEqual, ErrContextIsNilError)
 	})
 }
 

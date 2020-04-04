@@ -4,20 +4,20 @@ package drr
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"reflect"
 )
 
 var (
-	// InvalidPriorityValueError error is returned by Input method when
+	// ErrInvalidPriorityValueError error is returned by Input method when
 	// priority value is less than or equal to 0.
-	InvalidPriorityValueError = fmt.Errorf("InvalidPriorityValueError")
-	// ChannelIsNilError error is returned by NewDRR and Input methods
+	ErrInvalidPriorityValueError = errors.New("ErrInvalidPriorityValueError")
+	// ErrChannelIsNilError error is returned by NewDRR and Input methods
 	// when channel is nil.
-	ChannelIsNilError = fmt.Errorf("ChannelIsNilError")
-	// ContextIsNilError is returned by Start method when context.Context
+	ErrChannelIsNilError = errors.New("ErrChannelIsNilError")
+	// ErrContextIsNilError is returned by Start method when context.Context
 	// is nil
-	ContextIsNilError = fmt.Errorf("ContextIsNil")
+	ErrContextIsNilError = errors.New("ContextIsNil")
 )
 
 type flow struct {
@@ -36,10 +36,10 @@ type DRR struct {
 // NewDRR creates a new DRR with indicated output channel.
 //
 // The outChan must be non-nil, otherwise NewDRR returns
-// ChannelIsNilError error.
+// ErrChannelIsNilError error.
 func NewDRR(outChan chan interface{}) (*DRR, error) {
 	if outChan == nil {
-		return nil, ChannelIsNilError
+		return nil, ErrChannelIsNilError
 	}
 	return &DRR{
 		outChan: outChan,
@@ -49,15 +49,15 @@ func NewDRR(outChan chan interface{}) (*DRR, error) {
 // Input registers a new ingress flow, that is a channel with
 // priority.
 //
-// Input returns ChannelIsNilError if input channel is nil.
+// Input returns ErrChannelIsNilError if input channel is nil.
 // Priority must be greater than 0, otherwise Input returns
-// InvalidPriorityValueError error.
+// ErrInvalidPriorityValueError error.
 func (d *DRR) Input(prio int, in <-chan interface{}) error {
 	if prio <= 0 {
-		return InvalidPriorityValueError
+		return ErrInvalidPriorityValueError
 	}
 	if in == nil {
-		return ChannelIsNilError
+		return ErrChannelIsNilError
 	}
 	d.flows = append(d.flows, flow{c: in, prio: prio})
 	return nil
@@ -73,7 +73,7 @@ func (d *DRR) Input(prio int, in <-chan interface{}) error {
 // channels are closed. DRR goroutine closes the output channel upon termination.
 func (d *DRR) Start(ctx context.Context) error {
 	if ctx == nil {
-		return ContextIsNilError
+		return ErrContextIsNilError
 	}
 	go func() {
 		defer close(d.outChan)
