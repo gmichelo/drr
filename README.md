@@ -39,7 +39,7 @@ What we observe from channel _Out_ is that input flows _In_1_ and _In_2_ share t
 DRR scheduling algorithm does not take into account empty flows (i.e. those that do not have anything to transmit). Therefore, the output capacity is shared among all the non-empty input flows.
 
 ## API Documentation
-Documentation can be found [here](https://godoc.org/github.com/bigmikes/drr).
+Documentation can be found [here](https://pkg.go.dev/github.com/bigmikes/drr?tab=doc).
 
 ## Example
 ```Go
