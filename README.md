@@ -50,8 +50,8 @@ import (
 	"github.com/bigmikes/drr"
 )
 
-func sourceRequests(s string) <-chan interface{} {
-	inChan := make(chan interface{}, 5)
+func sourceRequests(s string) <-chan string {
+	inChan := make(chan string, 5)
 	go func() {
 		defer close(inChan)
 		for i := 0; i < 5; i++ {
@@ -63,7 +63,7 @@ func sourceRequests(s string) <-chan interface{} {
 
 func main() {
 	// Set output channel and create DRR scheduler.
-	outputChan := make(chan interface{}, 5)
+	outputChan := make(chan string, 5)
 	drr, err := drr.NewDRR(outputChan)
 	if err != nil {
 		panic(err)
