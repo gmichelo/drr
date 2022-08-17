@@ -20,16 +20,16 @@ var (
 	ErrContextIsNil = errors.New("ContextIsNil")
 )
 
-type flow struct {
-	c    <-chan interface{}
+type flow[T any] struct {
+	c    <-chan T
 	prio int
 }
 
 // DRR is a Deficit Round Robin scheduler, as detailed in
 // https://en.wikipedia.org/wiki/Deficit_round_robin.
-type DRR struct {
-	flows         []flow
-	outChan       chan interface{}
+type DRR[T any] struct {
+	flows         []flow[T]
+	outChan       chan T
 	flowsToDelete []int
 }
 
@@ -37,11 +37,11 @@ type DRR struct {
 //
 // The outChan must be non-nil, otherwise NewDRR returns
 // ErrChannelIsNil error.
-func NewDRR(outChan chan interface{}) (*DRR, error) {
+func NewDRR[T any](outChan chan T) (*DRR[T], error) {
 	if outChan == nil {
 		return nil, ErrChannelIsNil
 	}
-	return &DRR{
+	return &DRR[T]{
 		outChan: outChan,
 	}, nil
 }
@@ -52,26 +52,26 @@ func NewDRR(outChan chan interface{}) (*DRR, error) {
 // Input returns ErrChannelIsNil if input channel is nil.
 // Priority must be greater than 0, otherwise Input returns
 // ErrInvalidPriorityValue error.
-func (d *DRR) Input(prio int, in <-chan interface{}) error {
+func (d *DRR[T]) Input(prio int, in <-chan T) error {
 	if prio <= 0 {
 		return ErrInvalidPriorityValue
 	}
 	if in == nil {
 		return ErrChannelIsNil
 	}
-	d.flows = append(d.flows, flow{c: in, prio: prio})
+	d.flows = append(d.flows, flow[T]{c: in, prio: prio})
 	return nil
 }
 
 // Start actually spawns the DRR goroutine. Once Start is called,
-// goroutine starts forwarding from input channels previously registered
+// the goroutine starts forwarding from input channels previously registered
 // through Input method to output channel.
 //
 // Start returns ContextIsNil error if ctx is nil.
 //
 // DRR goroutine exits when context.Context expires or when all the input
 // channels are closed. DRR goroutine closes the output channel upon termination.
-func (d *DRR) Start(ctx context.Context) error {
+func (d *DRR[T]) Start(ctx context.Context) error {
 	if ctx == nil {
 		return ErrContextIsNil
 	}
@@ -79,7 +79,7 @@ func (d *DRR) Start(ctx context.Context) error {
 		defer close(d.outChan)
 		for {
 			// Wait for at least one channel to be ready
-			readyIndex, value, ok := getReadyChannel(
+			readyIndex, value, ok := d.getReadyChannel(
 				ctx,
 				d.flows)
 			if readyIndex < 0 {
@@ -136,13 +136,13 @@ func (d *DRR) Start(ctx context.Context) error {
 	return nil
 }
 
-func (d *DRR) prepareToUnregister(index int) {
+func (d *DRR[T]) prepareToUnregister(index int) {
 	d.flowsToDelete = append(d.flowsToDelete, index)
 }
 
-func (d *DRR) unregisterFlows() bool {
+func (d *DRR[T]) unregisterFlows() bool {
 	oldFlows := d.flows
-	d.flows = make([]flow, 0, len(oldFlows)-len(d.flowsToDelete))
+	d.flows = make([]flow[T], 0, len(oldFlows)-len(d.flowsToDelete))
 oldFlowsLoop:
 	for i, flow := range oldFlows {
 		for _, index := range d.flowsToDelete {
@@ -156,7 +156,7 @@ oldFlowsLoop:
 	return len(d.flows) == 0
 }
 
-func getReadyChannel(ctx context.Context, flows []flow) (int, interface{}, bool) {
+func (d *DRR[T]) getReadyChannel(ctx context.Context, flows []flow[T]) (int, T, bool) {
 	cases := make([]reflect.SelectCase, 0, len(flows)+1)
 	//First case is the termiantion channel for context cancellation
 	c := reflect.SelectCase{
@@ -176,8 +176,9 @@ func getReadyChannel(ctx context.Context, flows []flow) (int, interface{}, bool)
 	index, value, ok := reflect.Select(cases)
 	//Termination channel
 	if index == 0 {
-		return -1, nil, false
+		var zeroT T
+		return -1, zeroT, false
 	}
 	//Rescaling index (-1) because of additional termination channel
-	return index - 1, value.Interface(), ok
+	return index - 1, value.Interface().(T), ok
 }

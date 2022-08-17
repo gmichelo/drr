@@ -1,9 +1,11 @@
 module github.com/bigmikes/drr
 
-go 1.13
+go 1.19
+
+require github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
 
 require (
-	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
-	golang.org/x/net v0.0.0-20191101175033-0deb6923b6d9 // indirect
-	golang.org/x/tools v0.0.0-20191101200257-8dbcdeb83d3f // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
+	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 )
